@@ -47,6 +47,7 @@ public class SecurityConfig {
                         authorize
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/v1/product/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/category/**").permitAll()
                         .requestMatchers("/v1/cart/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/v1/product/**", "/v1/cart/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/v1/product/**").hasAuthority("ADMIN")
