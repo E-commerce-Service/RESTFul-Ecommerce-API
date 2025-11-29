@@ -50,21 +50,23 @@ public class CartServiceImplement implements CartService {
             throw new EntityNotFoundException("Product not found.");
         }
 
-        var existingPendingItem = cart.getItems().stream()
+        var existingItemOptional = cart.getItems().stream()
                 .filter(item -> item.getProduct().getId().equals(productId))
-                .filter(item -> item.getStatus().equals(ItemStatus.PENDING))
+                .filter(item -> item.getStatus().equals(ItemStatus.PENDING) || item.getStatus().equals(ItemStatus.UNSELECTED))
                 .findFirst();
 
-        int totalQuantity = existingPendingItem.map(item -> item.getQuantity() + quantity).orElse(quantity);
+        int totalQuantity = existingItemOptional.map(item -> item.getQuantity() + quantity).orElse(quantity);
+
         if (!productService.isStockAvailable(productId, totalQuantity)) {
             throw new InsufficientStockException(product.getName(), product.getId());
         }
 
-        if (existingPendingItem.isPresent()) {
-            var cartItem = existingPendingItem.get();
+        if (existingItemOptional.isPresent()) {
+            var cartItem = existingItemOptional.get();
             int newQuantity = cartItem.getQuantity() + quantity;
             cartItem.setQuantity(newQuantity);
             cartItem.setPrice(product.getPrice() * newQuantity);
+            cartItem.setStatus(ItemStatus.PENDING);
             cartItemRepository.save(cartItem);
         } else {
             Double itemPrice = product.getPrice() * quantity;
