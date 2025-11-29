@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.wesley.ecommerce.application.domain.enumeration.ItemStatus;
 
+import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -28,5 +30,12 @@ public class CartItem {
     @JoinColumn(name = "order_id")
     private OrderShopping order;
     private ItemStatus status = ItemStatus.PENDING;
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
 
