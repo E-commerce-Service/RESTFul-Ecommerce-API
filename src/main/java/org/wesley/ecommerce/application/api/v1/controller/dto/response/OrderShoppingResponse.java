@@ -12,7 +12,8 @@ public record OrderShoppingResponse(
         Long orderId,
         List<ItemResponse> items,
         OrderStatus orderStatus,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        OrderUserResponse user
 
 ) {
     public static OrderShoppingResponse fromDTO(OrderShopping orderShopping) {
@@ -22,7 +23,8 @@ public record OrderShoppingResponse(
                         .map(OrderShoppingResponse::toItemDTO)
                         .collect(Collectors.toList()),
                 orderShopping.getStatus(),
-                orderShopping.getCreatedAt()
+                orderShopping.getCreatedAt(),
+                OrderUserResponse.fromEntity(orderShopping.getUser())
         );
     }
 

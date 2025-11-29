@@ -1,8 +1,10 @@
 package org.wesley.ecommerce.application.api.v1.controller.dto.response;
 
 import org.wesley.ecommerce.application.domain.model.Cart;
+import org.wesley.ecommerce.application.domain.model.CartItem;
 import org.wesley.ecommerce.application.domain.model.Users;
 
+import java.util.Comparator;
 import java.util.List;
 
 
@@ -16,6 +18,7 @@ public record CartResponse(
         return new CartResponse(
                 cart.getId(),
                 cart.getItems().stream()
+                        .sorted(Comparator.comparing(CartItem::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                         .map(ItemResponse::fromDTO)
                         .toList(),
                 cart.getTotalPrice()
