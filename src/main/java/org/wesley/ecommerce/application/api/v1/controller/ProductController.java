@@ -61,16 +61,18 @@ public class ProductController {
     @GetMapping
     @Operation(
             summary = "Get all products",
-            description = "Retrieve a list of all registered products"
+            description = "Retrieve a list of all registered products with optional filters"
     )
     public ResponseEntity<ApiResponse<ProductResponse>> getAllProducts(
             @RequestParam(name = "sortBy", required = false) ProductSortBy sortBy,
             @RequestParam(name = "sortDirection", required = false) SortDirection sortDirection,
             @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "categoryId", required = false) Long categoryId,
             @RequestParam(name = "page", defaultValue = "0") Integer page,
             @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize
     ) {
-        var products = productService.findAll(sortBy, sortDirection, name, page, pageSize);
+        var products = productService.findAll(sortBy, sortDirection, name, categoryId, page, pageSize);
+
         return getApiResponseResponseEntity(products);
     }
 
@@ -144,7 +146,6 @@ public class ProductController {
         var products = productService.findProductsByCart(cartId);
         return ResponseEntity.ok(products);
     }
-
     @PostMapping("/{productId}/reviews")
     @Operation(
             summary = "Submit a review for a product",
