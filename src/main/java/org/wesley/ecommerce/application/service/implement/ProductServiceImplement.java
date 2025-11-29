@@ -23,6 +23,7 @@ import org.wesley.ecommerce.application.domain.repository.CartRepository;
 import org.wesley.ecommerce.application.domain.repository.ProductCategoryRepository;
 import org.wesley.ecommerce.application.domain.repository.ProductRepository;
 import org.wesley.ecommerce.application.exceptions.local.ProductCategoryNotFoundException;
+import org.wesley.ecommerce.application.service.ProductCategoryService;
 import org.wesley.ecommerce.application.service.ProductService;
 
 import java.util.List;
@@ -39,6 +40,7 @@ public class ProductServiceImplement implements ProductService {
     private final CartRepository cartRepository;
     private final CloudinaryService cloudinaryService;
     private final RabbitTemplate rabbitTemplate;
+    private final ProductCategoryService productCategoryService;
 
     @Override
     @Transactional
@@ -83,7 +85,7 @@ public class ProductServiceImplement implements ProductService {
     }
 
     @Override
-    public Page<Product> findAll(ProductSortBy sortBy, SortDirection sortDirection, String name, Integer page, Integer pageSize) {
+    public Page<Product> findAll(ProductSortBy sortBy, SortDirection sortDirection, String name, Long categoryId, Integer page, Integer pageSize) {
 
         var finalSortBy = (sortBy == null) ? ProductSortBy.NAME : sortBy;
         Sort.Direction finalDirection = (sortDirection == null || sortDirection == SortDirection.ASC)
@@ -96,10 +98,20 @@ public class ProductServiceImplement implements ProductService {
                 Sort.by(finalDirection, finalSortBy.getPropertyName())
         );
 
-        if (name != null && !name.isBlank() && !name.trim().isEmpty()) {
-            return productRepository.findByNameContainingIgnoreCase(name, pageable);
+        String searchName;
+
+        if (name != null && !name.isBlank()) {
+            searchName = "%" + name.trim() + "%";
+        } else {
+            searchName = "%";
         }
-        return productRepository.findAll(pageable);
+
+        ProductCategory category = null;
+        if (categoryId != null) {
+            category = productCategoryService.findById(categoryId);
+        }
+
+        return productRepository.findWithFilters(searchName, category, pageable);
     }
 
     @Override
@@ -163,6 +175,7 @@ public class ProductServiceImplement implements ProductService {
     }
 
     @Override
+    @Transactional
     public void delete(Product product) {
 
         if (productRepository.existsById(product.getId())) {
@@ -195,7 +208,7 @@ public class ProductServiceImplement implements ProductService {
         }
 
         var event = new ReviewCreatedEvent(
-                UUID.randomUUID().toString(), 
+                UUID.randomUUID().toString(),
                 productId,
                 product.getCode(),
                 authenticatedUser.getId(),
@@ -212,8 +225,8 @@ public class ProductServiceImplement implements ProductService {
     public void submitComment(Long productId, UUID reviewId, Users authenticatedUser, CreateCommentRequest request) {
         var event = new CommentAddedEvent(
                 reviewId,
-                UUID.randomUUID().toString(), 
-                request.parentCommentId(),    
+                UUID.randomUUID().toString(),
+                request.parentCommentId(),
                 authenticatedUser.getId(),
                 authenticatedUser.getName(),
                 request.content(),
@@ -221,7 +234,7 @@ public class ProductServiceImplement implements ProductService {
                 request.mentionedUserName()
         );
 
-        String commentAddedQueue = "comment.added.queue"; 
+        String commentAddedQueue = "comment.added.queue";
         rabbitTemplate.convertAndSend(commentAddedQueue, event);
     }
 }
