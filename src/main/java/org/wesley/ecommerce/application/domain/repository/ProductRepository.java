@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.wesley.ecommerce.application.domain.model.Product;
 import org.wesley.ecommerce.application.domain.model.ProductCategory;
 
@@ -24,4 +25,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Page<Product> findProductsByCategory(ProductCategory category, Pageable pageable);
 
     Page<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
+    @Query("SELECT p FROM Product p WHERE " +
+            "(LOWER(p.name) LIKE LOWER(:name)) AND " +
+            "(:category IS NULL OR p.category = :category)")
+    Page<Product> findWithFilters(
+            @Param("name") String name,
+            @Param("category") ProductCategory category,
+            Pageable pageable
+    );
 }
