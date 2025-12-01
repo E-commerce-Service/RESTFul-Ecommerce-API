@@ -2,6 +2,7 @@ package org.wesley.ecommerce.application.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.wesley.ecommerce.application.domain.enumeration.PaymentType;
 import org.wesley.ecommerce.application.domain.model.OrderShopping;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public interface OrderService {
 
     OrderShopping findById(Long id);
 
-    OrderShopping createOrderFromCart(UUID userId);
+    OrderShopping createOrderFromCart(UUID userId, PaymentType paymentType, String cardToken);
 
     OrderShopping confirmOrder(Long orderId, boolean confirm);
 
