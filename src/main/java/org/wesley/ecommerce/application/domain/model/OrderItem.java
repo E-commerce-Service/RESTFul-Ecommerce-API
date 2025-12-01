@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.wesley.ecommerce.application.domain.enumeration.ItemStatus;
 
+import java.math.BigDecimal;
+
 @Entity
 @Data
 public class OrderItem {
@@ -19,6 +21,6 @@ public class OrderItem {
     private Product product;
     
     private Integer quantity;
-    private Double price;
+    private BigDecimal price;
     private ItemStatus status = ItemStatus.PENDING;
 }
