@@ -2,6 +2,7 @@ package org.wesley.ecommerce.application.api.v1.controller.dto.request;
 
 import jakarta.validation.constraints.PositiveOrZero;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 
@@ -12,6 +13,6 @@ public record UpdateProductRequest(
     Integer stock,
     String categoryName,
     @PositiveOrZero(message = "Price must be zero or greater")
-    Double price,
+    BigDecimal price,
     List<String> publicIdsToDelete
 ) {}
