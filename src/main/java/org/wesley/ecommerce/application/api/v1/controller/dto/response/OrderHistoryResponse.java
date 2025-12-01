@@ -2,13 +2,14 @@ package org.wesley.ecommerce.application.api.v1.controller.dto.response;
 
 import org.wesley.ecommerce.application.domain.model.OrderShopping;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public record OrderHistoryResponse(
         Long orderId,
         String orderStatus,
         List<ItemResponse> items,
-        Double totalPrice,
+        BigDecimal totalPrice,
         String createdAt
 ) {
 
@@ -22,8 +23,8 @@ public record OrderHistoryResponse(
                 orderShopping.getStatus().name(),
                 itemResponses,
                 itemResponses.stream()
-                        .mapToDouble(ItemResponse::price)
-                        .sum(),
+                        .map(ItemResponse::price)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add),
                 orderShopping.getCreatedAt().toString()
         );
     }

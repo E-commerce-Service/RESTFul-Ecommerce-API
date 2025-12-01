@@ -4,6 +4,7 @@ import org.wesley.ecommerce.application.domain.model.Cart;
 import org.wesley.ecommerce.application.domain.model.CartItem;
 import org.wesley.ecommerce.application.domain.model.Users;
 
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 
@@ -11,7 +12,7 @@ import java.util.List;
 public record CartResponse(
         Long cartID,
         List<ItemResponse> items,
-        Double totalPrice
+        BigDecimal totalPrice
 ) {
 
     public static CartResponse fromDTO(Cart cart) {

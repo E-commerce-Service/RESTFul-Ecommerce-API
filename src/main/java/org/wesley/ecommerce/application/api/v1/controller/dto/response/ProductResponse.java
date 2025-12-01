@@ -2,6 +2,7 @@ package org.wesley.ecommerce.application.api.v1.controller.dto.response;
 
 import org.wesley.ecommerce.application.domain.model.Product;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -16,7 +17,7 @@ public record ProductResponse(
         String description,
         Integer stock,
         String categoryName,
-        Double price,
+        BigDecimal price,
         Double rating,
         Long totalReviews,
         Integer soldCount,
