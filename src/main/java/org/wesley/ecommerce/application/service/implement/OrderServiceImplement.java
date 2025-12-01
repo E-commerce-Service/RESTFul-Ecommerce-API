@@ -3,11 +3,16 @@ package org.wesley.ecommerce.application.service.implement;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.wesley.ecommerce.application.api.v1.controller.dto.integration.PaymentRequest;
+import org.wesley.ecommerce.application.config.rabbitmq.RabbitMqConfig;
 import org.wesley.ecommerce.application.domain.enumeration.ItemStatus;
 import org.wesley.ecommerce.application.domain.enumeration.OrderStatus;
+import org.wesley.ecommerce.application.domain.enumeration.PaymentStatus;
+import org.wesley.ecommerce.application.domain.enumeration.PaymentType;
 import org.wesley.ecommerce.application.domain.model.Cart;
 import org.wesley.ecommerce.application.domain.model.OrderItem;
 import org.wesley.ecommerce.application.domain.model.OrderShopping;
@@ -18,6 +23,7 @@ import org.wesley.ecommerce.application.exceptions.local.InsufficientStockExcept
 import org.wesley.ecommerce.application.service.CartService;
 import org.wesley.ecommerce.application.service.OrderService;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -28,6 +34,7 @@ import java.util.stream.Collectors;
 public class OrderServiceImplement implements OrderService {
     private final OrderRepository orderRepository;
     private final CartService cartService;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     public OrderShopping create(OrderShopping orderShopping) {
@@ -41,7 +48,7 @@ public class OrderServiceImplement implements OrderService {
 
     @Override
     @Transactional
-    public OrderShopping createOrderFromCart(UUID userId) {
+    public OrderShopping createOrderFromCart(UUID userId, PaymentType paymentType, String cardToken) {
         Cart cart = cartService.findCartByUserId(userId);
 
         OrderShopping order = new OrderShopping();
@@ -59,6 +66,7 @@ public class OrderServiceImplement implements OrderService {
                     return orderItem;
                 })
                 .collect(Collectors.toList());
+
         if (orderItems.isEmpty()) {
             throw new CartEmptyException(cart.getId());
         }
@@ -69,7 +77,56 @@ public class OrderServiceImplement implements OrderService {
         cart.recalculateTotal();
         cartService.create(cart);
 
-        return orderRepository.save(order);
+        OrderShopping savedOrder = orderRepository.save(order);
+
+        BigDecimal totalAmount = savedOrder.getItems().stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        PaymentRequest paymentRequest = new PaymentRequest(
+                savedOrder.getTransactionCode(),
+                totalAmount,
+                paymentType,
+                userId.toString(),
+                cardToken
+        );
+
+        rabbitTemplate.convertAndSend(RabbitMqConfig.QUEUE_PAYMENT_REQUEST, paymentRequest);
+
+        return savedOrder;
+    }
+
+    @Transactional
+    public void updateOrderStatusFromPayment(UUID transactionCode, PaymentStatus paymentStatus) {
+        OrderShopping order = orderRepository.findByTransactionCode(transactionCode)
+                .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado p/ transação: " + transactionCode));
+        if (PaymentStatus.SUCCESS.equals(paymentStatus)) {
+            completeOrder(order);
+        } else {
+            cancelOrder(order);
+        }
+    }
+
+    private void completeOrder(OrderShopping order) {
+        if (order.getStatus() == OrderStatus.COMPLETED) return;
+
+        for (var item : order.getItems()) {
+            Product product = item.getProduct();
+            if (product.getStock() < item.getQuantity()) {
+                throw new InsufficientStockException(product.getName(), product.getId());
+            }
+            product.setStock(product.getStock() - item.getQuantity());
+            product.setSoldCount(product.getSoldCount() + item.getQuantity());
+            item.setStatus(ItemStatus.COMPLETED);
+        }
+        order.setStatus(OrderStatus.COMPLETED);
+        orderRepository.save(order);
+    }
+
+    private void cancelOrder(OrderShopping order) {
+        order.setStatus(OrderStatus.CANCELLED);
+        order.getItems().forEach(item -> item.setStatus(ItemStatus.CANCELLED));
+        orderRepository.save(order);
     }
 
     @Override
@@ -79,27 +136,15 @@ public class OrderServiceImplement implements OrderService {
                 .orElseThrow(() -> new EntityNotFoundException("Order not found"));
 
         if (order.getStatus().equals(OrderStatus.COMPLETED)) {
-            throw new IllegalStateException("This order aleready has a status of " + order.getStatus());
+            throw new IllegalStateException("Order already COMPLETED");
         }
 
         if (confirm) {
-            for (var item : order.getItems()) {
-                Product product = item.getProduct();
-                if (product.getStock() < item.getQuantity()) {
-                    throw new InsufficientStockException(product.getName(), product.getId());
-                }
-                product.setStock(product.getStock() - item.getQuantity());
-                product.setSoldCount(product.getSoldCount() + item.getQuantity());
-            }
-
-            order.setStatus(OrderStatus.COMPLETED);
-            order.getItems().forEach(item -> item.setStatus(ItemStatus.COMPLETED));
+            completeOrder(order);
         } else {
-            order.setStatus(OrderStatus.CANCELLED);
-            order.getItems().forEach(item -> item.setStatus(ItemStatus.CANCELLED));
+            cancelOrder(order);
         }
-
-        return orderRepository.save(order);
+        return order;
     }
 
     @Override
