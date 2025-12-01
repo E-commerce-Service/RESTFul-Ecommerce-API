@@ -14,6 +14,7 @@ import org.wesley.ecommerce.application.exceptions.local.InsufficientStockExcept
 import org.wesley.ecommerce.application.service.CartService;
 import org.wesley.ecommerce.application.service.ProductService;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -38,7 +39,6 @@ public class CartServiceImplement implements CartService {
         }
         return authenticationService.getActiveCart(user);
     }
-
 
     @Transactional
     @Override
@@ -65,11 +65,11 @@ public class CartServiceImplement implements CartService {
             var cartItem = existingItemOptional.get();
             int newQuantity = cartItem.getQuantity() + quantity;
             cartItem.setQuantity(newQuantity);
-            cartItem.setPrice(product.getPrice() * newQuantity);
+            cartItem.setPrice(product.getPrice().multiply(BigDecimal.valueOf(newQuantity)));
             cartItem.setStatus(ItemStatus.PENDING);
             cartItemRepository.save(cartItem);
         } else {
-            Double itemPrice = product.getPrice() * quantity;
+            BigDecimal itemPrice = product.getPrice().multiply(BigDecimal.valueOf(quantity));
             var newCartItem = new CartItem();
             newCartItem.setCart(cart);
             newCartItem.setProduct(product);
@@ -108,7 +108,7 @@ public class CartServiceImplement implements CartService {
         }
 
         cartItem.setQuantity(cartItem.getQuantity() - quantity);
-        cartItem.setPrice(cartItem.getProduct().getPrice() * cartItem.getQuantity());
+        cartItem.setPrice(cartItem.getProduct().getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
 
         if (cartItem.getQuantity() == 0) {
             cart.getItems().remove(cartItem);
