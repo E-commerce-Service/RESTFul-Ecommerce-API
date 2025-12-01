@@ -7,9 +7,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.wesley.ecommerce.application.domain.model.OrderShopping;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<OrderShopping, Long> {
+    Optional<OrderShopping> findByTransactionCode(UUID transactionCode);
+
     @Query(
             value = "SELECT o FROM OrderShopping o LEFT JOIN FETCH o.items",
             countQuery = "SELECT COUNT(o) FROM OrderShopping o"
