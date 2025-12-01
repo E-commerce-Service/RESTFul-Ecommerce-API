@@ -3,14 +3,17 @@ package org.wesley.ecommerce.application.api.v1.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.Data;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.wesley.ecommerce.application.api.v1.controller.dto.request.CreateOrderRequest;
 import org.wesley.ecommerce.application.api.v1.controller.dto.response.OrderHistoryResponse;
 import org.wesley.ecommerce.application.api.v1.controller.dto.response.OrderShoppingResponse;
 import org.wesley.ecommerce.application.api.v1.controller.dto.response.ApiResponse;
 import org.wesley.ecommerce.application.api.v1.controller.dto.response.PaginationResponse;
+import org.wesley.ecommerce.application.domain.enumeration.PaymentType;
 import org.wesley.ecommerce.application.domain.model.*;
 import org.wesley.ecommerce.application.service.CartService;
 import org.wesley.ecommerce.application.service.OrderService;
@@ -39,9 +42,15 @@ class OrderController {
             summary = "Create a new order",
             description = "Create a new order and send it for admin confirmation."
     )
-    public ResponseEntity<OrderShoppingResponse> createOrder() {
+    public ResponseEntity<OrderShoppingResponse> createOrder(
+            @RequestBody @Valid CreateOrderRequest request
+    ) {
         Users user = authenticationService.getAuthenticatedUser();
-        OrderShopping order = orderService.createOrderFromCart(user.getId());
+        OrderShopping order = orderService.createOrderFromCart(
+                user.getId(),
+                request.paymentType(),
+                request.cardToken()
+        );
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
