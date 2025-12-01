@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.wesley.ecommerce.application.domain.enumeration.ItemStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -25,7 +26,7 @@ public class CartItem {
     @Column(nullable = false)
     private Integer quantity;
     @Column(nullable = false)
-    private Double price;
+    private BigDecimal price;
     @ManyToOne
     @JoinColumn(name = "order_id")
     private OrderShopping order;
