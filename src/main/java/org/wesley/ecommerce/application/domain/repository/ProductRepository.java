@@ -24,14 +24,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Page<Product> findProductsByCategory(ProductCategory category, Pageable pageable);
 
-    Page<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
-
     @Query("SELECT p FROM Product p WHERE " +
             "(LOWER(p.name) LIKE LOWER(:name)) AND " +
-            "(:category IS NULL OR p.category = :category)")
+            "(:category IS NULL OR p.category = :category) AND " +
+            "(:onlyActive = false OR (p.deleted = false AND p.isAvailable = true))")
     Page<Product> findWithFilters(
             @Param("name") String name,
             @Param("category") ProductCategory category,
+            @Param("onlyActive") boolean onlyActive,
             Pageable pageable
     );
 }
