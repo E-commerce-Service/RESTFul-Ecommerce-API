@@ -69,9 +69,10 @@ public class ProductController {
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "categoryId", required = false) Long categoryId,
             @RequestParam(name = "page", defaultValue = "0") Integer page,
-            @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize
+            @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
+            @RequestParam(name = "onlyActive", defaultValue = "false") Boolean onlyActive
     ) {
-        var products = productService.findAll(sortBy, sortDirection, name, categoryId, page, pageSize);
+        var products = productService.findAll(sortBy, sortDirection, name, categoryId, page, pageSize, onlyActive);
 
         return getApiResponseResponseEntity(products);
     }
