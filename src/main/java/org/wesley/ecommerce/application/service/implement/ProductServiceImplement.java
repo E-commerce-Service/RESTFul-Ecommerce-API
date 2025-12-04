@@ -85,7 +85,7 @@ public class ProductServiceImplement implements ProductService {
     }
 
     @Override
-    public Page<Product> findAll(ProductSortBy sortBy, SortDirection sortDirection, String name, Long categoryId, Integer page, Integer pageSize) {
+    public Page<Product> findAll(ProductSortBy sortBy, SortDirection sortDirection, String name, Long categoryId, Integer page, Integer pageSize, Boolean onlyActive) {
 
         var finalSortBy = (sortBy == null) ? ProductSortBy.NAME : sortBy;
         Sort.Direction finalDirection = (sortDirection == null || sortDirection == SortDirection.ASC)
@@ -111,7 +111,7 @@ public class ProductServiceImplement implements ProductService {
             category = productCategoryService.findById(categoryId);
         }
 
-        return productRepository.findWithFilters(searchName, category, pageable);
+        return productRepository.findWithFilters(searchName, category, onlyActive, pageable);
     }
 
     @Override
@@ -178,17 +178,13 @@ public class ProductServiceImplement implements ProductService {
     @Transactional
     public void delete(Product product) {
 
-        if (productRepository.existsById(product.getId())) {
-            productRepository.deleteById(product.getId());
-            cloudinaryService.deleteImage(product.getCoverImagePublicId());
-            for (var imageUrl : product.getImageUrls().keySet()) {
-                cloudinaryService.deleteImage(imageUrl);
-            }
-            cloudinaryService.deleteImage(product.getCoverImagePublicId());
-
-        } else {
+        if (!productRepository.existsById(product.getId())) {
             throw new NoSuchElementException("Product with id " + product.getId() + " not found for delete");
         }
+
+        product.setDeleted(true);
+        product.setIsAvailable(false);
+        productRepository.save(product);
     }
 
     @Override
