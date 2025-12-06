@@ -9,6 +9,7 @@ on:
 env:
   IMAGE_NAME: wesley00s/ecommerce-spring-api
   CONTAINER_NAME: ecommerce-app
+  EXPORTER_IMAGE_NAME: wesley00s/postgres-exporter-app
 
 jobs:
   build:
@@ -39,10 +40,18 @@ jobs:
       - name: Build and test with Gradle
         run: ./gradlew clean build --no-daemon -x test
 
-      - name: Build and Push Docker Image
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push App Docker Image
         run: |
           docker build -t $IMAGE_NAME:${{ github.sha }} .
           docker tag $IMAGE_NAME:${{ github.sha }} $IMAGE_NAME:latest
-          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
           docker push $IMAGE_NAME:${{ github.sha }}
           docker push $IMAGE_NAME:latest
+
+      - name: Tag and Push Postgres Exporter
+        run: |
+          docker pull quay.io/prometheuscommunity/postgres-exporter:latest
+          docker tag quay.io/prometheuscommunity/postgres-exporter:latest $EXPORTER_IMAGE_NAME:latest
+          docker push $EXPORTER_IMAGE_NAME:latest
