@@ -1,9 +1,9 @@
 jwt:
   key:
     private:
-      path: classpath:certs/private_key.pem
+      path: /etc/secrets/private_key.pem
     public:
-      path: classpath:certs/public_key.pem
+      path: /etc/secrets/public_key.pem
 
 app:
   issuer: ${ISSUER}
@@ -24,15 +24,16 @@ spring:
     restart:
       enabled: true
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=require&prepareThreshold=0
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
   jpa:
     show-sql: true
     open-in-view: true
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
