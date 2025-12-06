@@ -1,170 +1,134 @@
+# 🛍️ E-commerce RESTful API
 
-# RESTFul E-commerce System API
+![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2.5-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
 
-This repository contains the source code for an e-commerce system developed in Java with Spring Boot. The system allows users to view products, place orders, manage shopping carts, and make payments.
+This repository hosts the core **Backend Service** for the E-commerce Microservices system. It provides a robust RESTful API handling products, users, shopping carts, orders, and authentication using a modern tech stack.
 
-## Class Diagram
+## 🚀 Key Features
 
-```mermaid
-classDiagram
-    class User {
-        +UUID userId
-        +String name
-        +String email
-        +String password
-        +UserType userType
-        +LocalDateTime createdAt
-        +Address address
-        +List<Cart> carts
-    }
+* **Authentication & Security**:
+    * Stateless authentication via **JWT** (RS256 signing).
+    * Role-based access control (RBAC).
+    * Custom Security Filters and OAuth2 Resource Server implementation.
+* **Product Catalog**:
+    * Complete CRUD for Products and Categories.
+    * Image hosting integration with **Cloudinary**.
+    * Review and Rating system.
+* **Shopping Logic**:
+    * Persistent Shopping Cart management.
+    * Stock validation and management.
+    * Checkout process with `PaymentRequest` integration.
+* **Event-Driven Architecture**:
+    * Asynchronous event handling using **RabbitMQ** (e.g., `CommentAddedEvent`, `PaymentConcludedEvent`).
+    * Decoupled listeners for high scalability.
+* **Database Management**:
+    * Versioned database migrations using **Flyway**.
+    * Optimized PostgreSQL schema.
+* **Observability**:
+    * Metrics exposure via **Spring Actuator** and **Prometheus**.
+    * Health checks and detailed application info.
 
-    class Address {
-        +Long id
-        +String street
-        +String city
-        +String state
-        +String zip
-    }
+## 🛠️ Tech Stack
 
-    class Cart {
-        +Long id
-        +boolean isActive
-        +User users
-        +List<Product> products
-    }
+* **Language**: Java 21
+* **Framework**: Spring Boot 3.2.5
+* **Database**: PostgreSQL
+* **Messaging**: RabbitMQ
+* **Migration**: Flyway
+* **Documentation**: OpenAPI (Swagger UI)
+* **Build Tool**: Gradle
+* **Containerization**: Docker & Docker Compose
 
-    class Order {
-        +Long id
-        +LocalDateTime createdAt
-        +OrderStatus status
-        +Cart cart
-    }
+## 🏗️ Architecture & Structure
 
-    class Product {
-        +Long id
-        +String code
-        +String name
-        +String description
-        +BigDecimal price
-        +Integer stockQuantity
-        +String imageUrl
-        +ProductCategory category
-    }
+The application follows a clean layered architecture:
 
-    class UserType {
-        CUSTOMER
-        ADMIN
-    }
-
-    class OrderStatus {
-        CREATED
-        COMPLETED
-        CANCELLED
-    }
-
-    class ProductCategory {
-        SMARTPHONE
-        PC
-        TABLETS
-        TV
-        HOME_APPLIANCES
-        ACCESSORY
-    }
-
-    %% Relationships
-    User "1" --> "1" Address : has
-    User "1" --> "*" Cart : has
-    Cart "1" --> "*" Product : contains
-    Cart "1" --> "1" User : belongs to
-    Cart "1" --> "1" Order : part of
-    Order "1" --> "1" Cart : belongs to
+```text
+src/main/java/org/wesley/ecommerce/
+├── application/    # Controllers, DTOs, Requests/Responses
+├── config/         # Configuration classes (Security, RabbitMQ, Swagger, Cloudinary)
+├── domain/         # Entities, Enums, Repositories, Custom Exceptions
+├── service/        # Business Logic and Interfaces
+└── utility/        # Helper classes
 ```
 
-## System Flow
+## ⚙️ Environment Configuration
 
-### 1. User Authentication and Registration
+To run the application, you must configure the environment variables. Create a `.env` file in the root directory based on `.env.example`:
 
-- **User Registration**: The system allows new users to register by sending a `POST` request to the `/register` endpoint. Registration includes information such as name, email, password, and address. The system returns a confirmation message after successful registration.
+```env
+# Database
+POSTGRES_HOST=db
+POSTGRES_DB=ecommerce_db
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
 
-- **User Login**: After registration, users can log in with their credentials by sending a `POST` request to `/auth`. The system returns a JWT token that will be used to authenticate the users in subsequent interactions with the API.
+# JWT
+ISSUER=your_issuer_name
 
-### 2. Product Management
+# Cloudinary (Image Hosting)
+CLOUDINARY_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
-- **List Products**: The users can view the list of all products available in the system by sending a `GET` request to `/product/products`. The system returns a list of products with details such as name, price, and category.
-
-- **Product Details**: To view detailed information about a specific product, the users can send a `GET` request to `/product/{id}`.
-
-- **Product Administration**: Administrators have permissions to create new products (`POST /product`), update product information (`PUT /product/update/{id}`), and remove products from the system (`DELETE /product/delete/{id}`).
-
-### 3. Shopping Cart
-
-- **Create Cart**: The system allows the users to create a shopping cart associated with their profile by sending a `POST` request to `/cart`. A cart is created empty and is active until it is disabled or completed.
-
-- **Add Products to Cart**: The users can add products to the existing cart by sending a `POST` request to `/cart/add/{cartId}/{productId}`, where the parameters are the cart ID and the product ID.
-
-- **View Cart**: The users can check the items in their active cart by sending a `GET` request to `/cart/{cartId}`.
-
-- **Disable Cart**: If the users no longer wants to use a cart, they can disable it by sending a `PUT` request to `/cart/disabled/{cartId}`.
-
-### 4. Order Processing
-
-- **Create Order**: When the users wishes to finalize a purchase, they can create an orderShopping based on an active cart by sending a `POST` request to `/orderShopping`. The system checks the stock quantity of each product, and if available, creates the orderShopping with an initial status of `CREATED`.
-
-- **Track Order**: The orderShopping can change its status to `COMPLETED` when payment is made or `CANCELLED` if the users opts to cancel the purchase.
-
-### 5. User Management
-
-- **Update User**: The users can update their personal information, such as email or address, by sending a `PUT` request to `/users/update/{id}`.
-
-- **View Users**: Administrators can list all registered users by sending a `GET` request to `/users/users`, or search for a specific users by ID (`GET /users/{id}`) or email (`GET /users/email/{email}`).
-
-### 6. Authorization and Permissions
-
-- The system uses OAuth to protect routes and verify if the users is authenticated before accessing or modifying resources. Only authorized users can view or edit products, carts, and orders.
-
-### 7. API Call Examples
-
-#### User Registration
-
-```json
-POST /register
-{
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "password": "strongpassword",
-    "street": "123 Main St",
-    "city": "Somewhere",
-    "state": "CA",
-    "zip": "12345"
-}
+# RabbitMQ
+RABBITMQ_DEFAULT_USER=guest
+RABBITMQ_DEFAULT_PASS=guest
+SPRING_RABBITMQ_HOST=rabbitmq
+SPRING_RABBITMQ_PORT=5672
 ```
 
-#### User Login
+> **Note:** Ensure you have the RSA keys (`private_key.pem` and `public_key.pem`) located in `src/main/resources/certs/` for JWT signing.
 
-```json
-POST /auth
-{
-    "email": "john.doe@example.com",
-    "password": "strongpassword"
-}
-```
+## 🐳 Running with Docker (Recommended)
 
-#### List Products
+The easiest way to run the API along with the Database and Exporters is using Docker Compose.
 
-```json
-GET /product/products
-```
+1.  **Build and Start:**
+    ```bash
+    docker-compose up -d --build
+    ```
 
-#### Create Order
+2.  **Access the services:**
+    * **API**: `http://localhost:8080/ecommerce/api`
+    * **Swagger UI**: `http://localhost:8080/ecommerce/api/docs/swagger-ui/index.html`
+    * **Prometheus Metrics**: `http://localhost:8080/ecommerce/api/actuator/prometheus`
 
-```json
-POST /orderShopping
-{
-    "cartId": 1,
-    "productId": 2
-}
-```
+## 📦 Manual Installation (Gradle)
 
-### Final Remarks
+1.  **Prerequisites:**
+    * JDK 21
+    * PostgreSQL running locally
+    * RabbitMQ running locally
 
-This system utilizes token-based JWT authentication, ensuring the security of operations. The shopping flow is integrated with product management, carts, and orders, providing an efficient and organized experience for end-users and administrators.
+2.  **Install Dependencies:**
+    ```bash
+    ./gradlew clean build -x test
+    ```
+
+3.  **Run the Application:**
+    ```bash
+    ./gradlew bootRun --args='--spring.profiles.active=dev'
+    ```
+
+## 📚 API Documentation
+
+The API is fully documented using **OpenAPI/Swagger**. Once the application is running, you can access the interactive documentation at:
+
+**URL:** `/ecommerce/api/docs`
+
+## 🤝 Contributing
+
+1.  Fork the repository.
+2.  Create a feature branch (`git checkout -b feature/NewEndpoint`).
+3.  Commit your changes (`git commit -m 'Add new endpoint for X'`).
+4.  Push to the branch (`git push origin feature/NewEndpoint`).
+5.  Open a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License.
