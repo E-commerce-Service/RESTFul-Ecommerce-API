@@ -6,7 +6,7 @@ jwt:
       path: /etc/secrets/public_key.pem
 
 app:
-  issuer: ${ISSUER}
+  issuer: ${ISSUER:Some-Issuer}
 
 spring:
 
