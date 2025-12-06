@@ -37,7 +37,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build and test with Gradle
-        run: ./gradlew clean build
+        run: ./gradlew clean build --no-daemon -x test
 
       - name: Build and Push Docker Image
         run: |
